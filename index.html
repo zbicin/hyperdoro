@@ -24,7 +24,7 @@
     <title>Hyperdoro</title>
     <script type="module">
         import { h, text, app } from "https://unpkg.com/hyperapp"
-        import { onAnimationFrame } from "https://unpkg.com/@hyperapp/events"
+        import { main, div, h1, button } from "https://unpkg.com/@hyperapp/html"
         import { every } from "https://unpkg.com/@hyperapp/time"
 
         const requestNotificationAccess = () => {
@@ -112,11 +112,6 @@
             lifecycle: Lifecycle.STOPPED_LIFECYCLE
         });
 
-
-        const OnAnimationFrame = (state, timestamp) => {
-            return state;
-        };
-
         const OneSecond = 1000;
         const Tick = (state) => {
             const timeIsUp = state.timeRemaining === 0;
@@ -140,44 +135,44 @@
         app({
             init: { timeRemaining: Duration.POMODORO_DURATION, mode: Mode.POMODORO_MODE, lifecycle: Lifecycle.STOPPED_LIFECYCLE },
             view: ({ timeRemaining, mode, lifecycle }) =>
-                h("main", {}, [
-                    h("div", {},
-                        h("div", {
+                main({}, [
+                    div({},
+                        div({
                             class: "btn-group btn-group-toggle mb-3"
                         }, [
-                            h("button", {
+                            button({
                                 class: `btn ${mode === Mode.POMODORO_MODE ? 'btn-primary' : 'btn-outline-primary'}`,
                                 onclick: ChangeModeToPomodoro
                             }, text("Pomodoro")),
-                            h("button", {
+                            button({
                                 class: `btn ${mode === Mode.SHORT_BREAK_MODE ? 'btn-primary' : 'btn-outline-primary'}`,
                                 onclick: ChangeModeToShortBreak
                             }, text("Short break")),
-                            h("button", {
+                            button({
                                 class: `btn ${mode === Mode.LONG_BREAK_MODE ? 'btn-primary' : 'btn-outline-primary'}`,
                                 onclick: ChangeModeToLongBreak
                             }, text("Long break"))
                         ])
                     ),
-                    h("div", {},
-                        h("div", {
+                    div({},
+                        div({
                             class: "btn-group btn-group-toggle mb-3"
                         }, [
-                            h("button", {
+                            button({
                                 class: `btn ${lifecycle === Lifecycle.RUNNING_LIFECYCLE ? 'btn-info' : 'btn-outline-info'}`,
                                 onclick: StartTimer
                             }, text("Start")),
-                            h("button", {
+                            button({
                                 class: `btn ${lifecycle === Lifecycle.PAUSED_LIFECYCLE ? 'btn-info' : 'btn-outline-info'}`,
                                 onclick: PauseTimer
                             }, text("Pause")),
-                            h("button", {
+                            button({
                                 class: `btn ${lifecycle === Lifecycle.STOPPED_LIFECYCLE ? 'btn-info' : 'btn-outline-info'}`,
                                 onclick: StopTimer
                             }, text("Stop")),
                         ]),
                     ),
-                    h("h1", {
+                    h1({
                         class: "display-3"
                     }, text(formatTime(timeRemaining)))
                 ]),
