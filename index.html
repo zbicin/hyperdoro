@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <link rel="shortcut icon" href="favicon.png" type="image/png">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootswatch/4.5.0/minty/bootstrap.min.css"
+        integrity="sha384-HqaYdAE26lgFCJsUF9TBdbZf7ygr9yPHtxtg37JshqVQi6CCAo6Qvwmgc5xclIiV" crossorigin="anonymous">
+    <style>
+        html,
+        body {
+            height: 100%;
+        }
+
+        body {
+            display: flex;
+            justify-content: center;
+        }
+
+        #app {
+            margin-top: 100px;
+            text-align: center;
+        }
+    </style>
+    <title>Hyperdoro</title>
+    <script type="module">
+        import { h, text, app } from "https://unpkg.com/hyperapp"
+        import { onAnimationFrame } from "https://unpkg.com/@hyperapp/events"
+        import { every } from "https://unpkg.com/@hyperapp/time"
+
+        const requestNotificationAccess = () => {
+            if (Notification.permission !== "granted" && Notification.permission !== "denied") {
+                void Notification.requestPermission();
+            }
+        };
+
+        const notify = (text) => {
+            if (Notification.permission === "granted") {
+                new Notification(text, {
+                    icon: document.querySelector("link[rel='shortcut icon']").getAttribute('href')
+                });
+            } else {
+                alert(text);
+            }
+        };
+
+        const Duration = Object.freeze({
+            POMODORO_DURATION: 25 * 60 * 1000,
+            SHORT_BREAK_DURATION: 5 * 60 * 1000,//10 * 1000,
+            LONG_BREAK_DURATION: 15 * 60 * 1000
+        });
+        const Mode = Object.freeze({
+            POMODORO_MODE: 0,
+            SHORT_BREAK_MODE: 1,
+            LONG_BREAK_MODE: 2
+        });
+        const Lifecycle = Object.freeze({
+            STOPPED_LIFECYCLE: 0,
+            RUNNING_LIFECYCLE: 1,
+            PAUSED_LIFECYCLE: 2
+        });
+
+        const formatTime = (timestamp) => {
+            const minutes = Math.floor(timestamp / 1000 / 60);
+            const seconds = minutes > 0
+                ? Math.floor((timestamp / 1000) % (minutes * 60))
+                : Math.floor((timestamp / 1000));
+            return `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
+        };
+
+        const updateTitle = (timeRemaining) => {
+            document.title = formatTime(timeRemaining);
+        }
+
+        const ChangeModeToPomodoro = (state) => ({
+            ...state,
+            timeRemaining: Duration.POMODORO_DURATION,
+            mode: Mode.POMODORO_MODE
+        });
+
+        const ChangeModeToShortBreak = (state) => ({
+            ...state,
+            timeRemaining: Duration.SHORT_BREAK_DURATION,
+            mode: Mode.SHORT_BREAK_MODE
+        });
+        const ChangeModeToLongBreak = (state) => ({
+            ...state,
+            timeRemaining: Duration.LONG_BREAK_DURATION,
+            mode: Mode.LONG_BREAK_MODE
+        });
+
+        const StartTimer = (state) => {
+            requestNotificationAccess();
+            updateTitle(state.timeRemaining);
+            return {
+                ...state,
+                lifecycle: Lifecycle.RUNNING_LIFECYCLE
+            };
+        };
+
+        const PauseTimer = (state) => ({
+            ...state,
+            lifecycle: Lifecycle.PAUSED_LIFECYCLE
+        });
+
+        const StopTimer = (state) => ({
+            ...state,
+            timeRemaining: state.mode === Mode.POMODORO_MODE
+                ? Duration.POMODORO_DURATION
+                : state.mode === Mode.SHORT_BREAK_MODE
+                    ? Duration.SHORT_BREAK_DURATION
+                    : -1,
+            lifecycle: Lifecycle.STOPPED_LIFECYCLE
+        });
+
+
+        const OnAnimationFrame = (state, timestamp) => {
+            return state;
+        };
+
+        const OneSecond = 1000;
+        const Tick = (state) => {
+            const timeIsUp = state.timeRemaining === 0;
+            if (timeIsUp) {
+                notify('Time is up!');
+                return {
+                    ...state,
+                    lifecycle: Lifecycle.STOPPED_LIFECYCLE
+                };
+            }
+
+            const newTimeRemaining = state.timeRemaining - OneSecond;
+            updateTitle(newTimeRemaining);
+            return {
+                ...state,
+                timeRemaining: newTimeRemaining
+            };
+        };
+
+
+        app({
+            init: { timeRemaining: Duration.POMODORO_DURATION, mode: Mode.POMODORO_MODE, lifecycle: Lifecycle.STOPPED_LIFECYCLE },
+            view: ({ timeRemaining, mode, lifecycle }) =>
+                h("main", {}, [
+                    h("div", {},
+                        h("div", {
+                            class: "btn-group btn-group-toggle mb-3"
+                        }, [
+                            h("button", {
+                                class: `btn ${mode === Mode.POMODORO_MODE ? 'btn-primary' : 'btn-outline-primary'}`,
+                                onclick: ChangeModeToPomodoro
+                            }, text("Pomodoro")),
+                            h("button", {
+                                class: `btn ${mode === Mode.SHORT_BREAK_MODE ? 'btn-primary' : 'btn-outline-primary'}`,
+                                onclick: ChangeModeToShortBreak
+                            }, text("Short break")),
+                            h("button", {
+                                class: `btn ${mode === Mode.LONG_BREAK_MODE ? 'btn-primary' : 'btn-outline-primary'}`,
+                                onclick: ChangeModeToLongBreak
+                            }, text("Long break"))
+                        ])
+                    ),
+                    h("div", {},
+                        h("div", {
+                            class: "btn-group btn-group-toggle mb-3"
+                        }, [
+                            h("button", {
+                                class: `btn ${lifecycle === Lifecycle.RUNNING_LIFECYCLE ? 'btn-info' : 'btn-outline-info'}`,
+                                onclick: StartTimer
+                            }, text("Start")),
+                            h("button", {
+                                class: `btn ${lifecycle === Lifecycle.PAUSED_LIFECYCLE ? 'btn-info' : 'btn-outline-info'}`,
+                                onclick: PauseTimer
+                            }, text("Pause")),
+                            h("button", {
+                                class: `btn ${lifecycle === Lifecycle.STOPPED_LIFECYCLE ? 'btn-info' : 'btn-outline-info'}`,
+                                onclick: StopTimer
+                            }, text("Stop")),
+                        ]),
+                    ),
+                    h("h1", {
+                        class: "display-3"
+                    }, text(formatTime(timeRemaining)))
+                ]),
+            subscriptions: (state) => [
+                state.lifecycle === Lifecycle.RUNNING_LIFECYCLE && every(OneSecond, Tick)
+            ],
+            node: document.getElementById("app"),
+        })
+    </script>
+</head>
+
+<body>
+    <main id="app"></main>
+</body>
+
+</html>
