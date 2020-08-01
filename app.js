@@ -1,5 +1,5 @@
 import { text, app } from "https://unpkg.com/hyperapp"
-import { main, div, h1, button } from "https://unpkg.com/@hyperapp/html"
+import { main, div, h1, button, a, p, br } from "https://unpkg.com/@hyperapp/html"
 import { every } from "https://unpkg.com/@hyperapp/time"
 
 const faviconUrl = document.querySelector("link[rel='shortcut icon']").getAttribute('href');
@@ -163,7 +163,22 @@ app({
             ),
             h1({
                 class: "display-3"
-            }, text(formatTime(timeRemaining)))
+            }, text(formatTime(timeRemaining))),
+            p({
+                class: "text-muted small"
+            }, [
+                text("Source code is available on "),
+                a({
+                    href: "https://github.com/zbicin/hyperdoro"
+                }, text("GitHub")),
+                text("."),
+                br({}),
+                text("Built with "),
+                a({
+                    href: "https://github.com/jorgebucaran/hyperapp"
+                }, text("Hyperapp")),
+                text(".")
+            ])
         ]),
     subscriptions: ({ lifecycle }) => [
         lifecycle === Lifecycle.RUNNING_LIFECYCLE && every(OneSecond, Tick)
