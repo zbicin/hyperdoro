@@ -37,7 +37,7 @@ const Notify = (() => {
 
 const Duration = Object.freeze({
     POMODORO_DURATION: 25 * 60 * 1000,
-    SHORT_BREAK_DURATION: 5 * 60 * 1000 / 60,
+    SHORT_BREAK_DURATION: 5 * 60 * 1000,
     LONG_BREAK_DURATION: 15 * 60 * 1000
 });
 const Mode = Object.freeze({
