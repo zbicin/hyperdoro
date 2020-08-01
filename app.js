@@ -1,26 +1,43 @@
-import { h, text, app } from "https://unpkg.com/hyperapp"
+import { text, app } from "https://unpkg.com/hyperapp"
 import { main, div, h1, button } from "https://unpkg.com/@hyperapp/html"
 import { every } from "https://unpkg.com/@hyperapp/time"
 
-const requestNotificationAccess = () => {
-    if (Notification.permission !== "granted" && Notification.permission !== "denied") {
-        void Notification.requestPermission();
-    }
-};
+const faviconUrl = document.querySelector("link[rel='shortcut icon']").getAttribute('href');
 
-const notify = (text) => {
-    if (Notification.permission === "granted") {
-        new Notification(text, {
-            icon: document.querySelector("link[rel='shortcut icon']").getAttribute('href')
-        });
-    } else {
-        alert(text);
+const BtnGroup = (children) => div({
+    class: "btn-group btn-group-toggle mb-3"
+}, children);
+
+const RequestNotificationAccess = (() => {
+    const effectFn = (dispatch, opts) => {
+        if (Notification.permission !== "granted" && Notification.permission !== "denied") {
+            void Notification.requestPermission();
+        }
     }
-};
+    return () => [effectFn, {}];
+})();
+
+const UpdateTitle = (() => {
+    const effectFn = (dispatch, opts) => {
+        document.title = opts.title;
+    };
+    return title => [effectFn, { title }];
+})();
+
+const Notify = (() => {
+    const effectFn = (dispatch, opts) => {
+        if (Notification.permission === "granted") {
+            new Notification(opts.message, { icon: faviconUrl });
+        } else {
+            alert(opts.message);
+        }
+    };
+    return message => [effectFn, { message }]
+})();
 
 const Duration = Object.freeze({
     POMODORO_DURATION: 25 * 60 * 1000,
-    SHORT_BREAK_DURATION: 5 * 60 * 1000,//10 * 1000,
+    SHORT_BREAK_DURATION: 5 * 60 * 1000 / 60,
     LONG_BREAK_DURATION: 15 * 60 * 1000
 });
 const Mode = Object.freeze({
@@ -42,10 +59,6 @@ const formatTime = (timestamp) => {
     return `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
 };
 
-const updateTitle = (timeRemaining) => {
-    document.title = formatTime(timeRemaining);
-}
-
 const ChangeModeToPomodoro = (state) => ({
     ...state,
     timeRemaining: Duration.POMODORO_DURATION,
@@ -57,20 +70,21 @@ const ChangeModeToShortBreak = (state) => ({
     timeRemaining: Duration.SHORT_BREAK_DURATION,
     mode: Mode.SHORT_BREAK_MODE
 });
+
 const ChangeModeToLongBreak = (state) => ({
     ...state,
     timeRemaining: Duration.LONG_BREAK_DURATION,
     mode: Mode.LONG_BREAK_MODE
 });
 
-const StartTimer = (state) => {
-    requestNotificationAccess();
-    updateTitle(state.timeRemaining);
-    return {
+const StartTimer = (state) => ([
+    {
         ...state,
         lifecycle: Lifecycle.RUNNING_LIFECYCLE
-    };
-};
+    },
+    RequestNotificationAccess(),
+    UpdateTitle(formatTime(state.timeRemaining))
+]);
 
 const PauseTimer = (state) => ({
     ...state,
@@ -91,19 +105,23 @@ const OneSecond = 1000;
 const Tick = (state) => {
     const timeIsUp = state.timeRemaining === 0;
     if (timeIsUp) {
-        notify('Time is up!');
-        return {
-            ...state,
-            lifecycle: Lifecycle.STOPPED_LIFECYCLE
-        };
+        return [
+            {
+                ...state,
+                lifecycle: Lifecycle.STOPPED_LIFECYCLE
+            },
+            Notify('Time is up!')
+        ];
     }
 
     const newTimeRemaining = state.timeRemaining - OneSecond;
-    updateTitle(newTimeRemaining);
-    return {
-        ...state,
-        timeRemaining: newTimeRemaining
-    };
+    return [
+        {
+            ...state,
+            timeRemaining: newTimeRemaining
+        },
+        UpdateTitle(formatTime(newTimeRemaining))
+    ];
 };
 
 
@@ -112,9 +130,7 @@ app({
     view: ({ timeRemaining, mode, lifecycle }) =>
         main({}, [
             div({},
-                div({
-                    class: "btn-group btn-group-toggle mb-3"
-                }, [
+                BtnGroup([
                     button({
                         class: `btn ${mode === Mode.POMODORO_MODE ? 'btn-primary' : 'btn-outline-primary'}`,
                         onclick: ChangeModeToPomodoro
@@ -130,9 +146,7 @@ app({
                 ])
             ),
             div({},
-                div({
-                    class: "btn-group btn-group-toggle mb-3"
-                }, [
+                BtnGroup([
                     button({
                         class: `btn ${lifecycle === Lifecycle.RUNNING_LIFECYCLE ? 'btn-info' : 'btn-outline-info'}`,
                         onclick: StartTimer
@@ -151,8 +165,8 @@ app({
                 class: "display-3"
             }, text(formatTime(timeRemaining)))
         ]),
-    subscriptions: (state) => [
-        state.lifecycle === Lifecycle.RUNNING_LIFECYCLE && every(OneSecond, Tick)
+    subscriptions: ({ lifecycle }) => [
+        lifecycle === Lifecycle.RUNNING_LIFECYCLE && every(OneSecond, Tick)
     ],
     node: document.getElementById("app"),
 })
