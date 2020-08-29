@@ -45,6 +45,11 @@ const Mode = Object.freeze({
     SHORT_BREAK_MODE: 1,
     LONG_BREAK_MODE: 2
 });
+const Mode2Duration = Object.freeze({
+    [Mode.POMODORO_MODE]: Duration.POMODORO_DURATION,
+    [Mode.SHORT_BREAK_MODE]: Duration.SHORT_BREAK_DURATION,
+    [Mode.LONG_BREAK_MODE]: Duration.LONG_BREAK_DURATION
+});
 const Lifecycle = Object.freeze({
     STOPPED_LIFECYCLE: 0,
     RUNNING_LIFECYCLE: 1,
@@ -80,6 +85,7 @@ const ChangeModeToLongBreak = (state) => ({
 const StartTimer = (state) => ([
     {
         ...state,
+        timeRemaining: state.timeRemaining === 0 ? Mode2Duration[state.mode] : state.timeRemaining,
         lifecycle: Lifecycle.RUNNING_LIFECYCLE
     },
     RequestNotificationAccess(),
