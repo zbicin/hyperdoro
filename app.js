@@ -1,12 +1,8 @@
-import { text, app } from "https://unpkg.com/hyperapp"
-import { main, div, h1, button, a, p, br } from "https://unpkg.com/@hyperapp/html"
+import { app } from "https://unpkg.com/hyperapp"
+import html from 'https://unpkg.com/hyperlit'
 import { every } from "https://unpkg.com/@hyperapp/time"
 
 const faviconUrl = document.querySelector("link[rel='shortcut icon']").getAttribute('href');
-
-const BtnGroup = (children) => div({
-    class: "btn-group btn-group-toggle mb-3"
-}, children);
 
 const RequestNotificationAccess = (() => {
     const effectFn = (dispatch, opts) => {
@@ -133,59 +129,42 @@ const Tick = (state) => {
 
 app({
     init: { timeRemaining: Duration.POMODORO_DURATION, mode: Mode.POMODORO_MODE, lifecycle: Lifecycle.STOPPED_LIFECYCLE },
-    view: ({ timeRemaining, mode, lifecycle }) =>
-        main({}, [
-            div({},
-                BtnGroup([
-                    button({
-                        class: `btn ${mode === Mode.POMODORO_MODE ? 'btn-primary' : 'btn-outline-primary'}`,
-                        onclick: ChangeModeToPomodoro
-                    }, text("Pomodoro")),
-                    button({
-                        class: `btn ${mode === Mode.SHORT_BREAK_MODE ? 'btn-primary' : 'btn-outline-primary'}`,
-                        onclick: ChangeModeToShortBreak
-                    }, text("Short break")),
-                    button({
-                        class: `btn ${mode === Mode.LONG_BREAK_MODE ? 'btn-primary' : 'btn-outline-primary'}`,
-                        onclick: ChangeModeToLongBreak
-                    }, text("Long break"))
-                ])
-            ),
-            div({},
-                BtnGroup([
-                    button({
-                        class: `btn ${lifecycle === Lifecycle.RUNNING_LIFECYCLE ? 'btn-info' : 'btn-outline-info'}`,
-                        onclick: StartTimer
-                    }, text("Start")),
-                    button({
-                        class: `btn ${lifecycle === Lifecycle.PAUSED_LIFECYCLE ? 'btn-info' : 'btn-outline-info'}`,
-                        onclick: PauseTimer
-                    }, text("Pause")),
-                    button({
-                        class: `btn ${lifecycle === Lifecycle.STOPPED_LIFECYCLE ? 'btn-info' : 'btn-outline-info'}`,
-                        onclick: StopTimer
-                    }, text("Stop")),
-                ]),
-            ),
-            h1({
-                class: "display-3"
-            }, text(formatTime(timeRemaining))),
-            p({
-                class: "text-muted small"
-            }, [
-                text("Source code is available on "),
-                a({
-                    href: "https://github.com/zbicin/hyperdoro"
-                }, text("GitHub")),
-                text("."),
-                br({}),
-                text("Built with "),
-                a({
-                    href: "https://github.com/jorgebucaran/hyperapp"
-                }, text("Hyperapp")),
-                text(".")
-            ])
-        ]),
+    view: ({ timeRemaining, mode, lifecycle }) => html`
+        <main>
+            <div>
+                <div class="btn-group btn-group-toggle mb-3">
+                    <button class="btn ${mode === Mode.POMODORO_MODE ? 'btn-primary' : 'btn-outline-primary'}" onclick=${ChangeModeToPomodoro}>
+                        Pomodoro
+                    </button>
+                    <button class="btn ${mode === Mode.SHORT_BREAK_MODE ? 'btn-primary' : 'btn-outline-primary'}" onclick=${ChangeModeToShortBreak}>
+                        Short break
+                    </button>
+                    <button class="btn ${mode === Mode.LONG_BREAK_MODE ? 'btn-primary' : 'btn-outline-primary'}" onclick=${ChangeModeToLongBreak}>
+                        Long break
+                    </button>
+                </div>
+            </div>
+            <div>
+                <div class="btn-group btn-group-toggle mb-3">
+                    <button class="btn ${lifecycle === Lifecycle.RUNNING_LIFECYCLE ? 'btn-info' : 'btn-outline-info'}" onclick=${StartTimer}>
+                        Start
+                    </button>
+                    <button class="btn ${lifecycle === Lifecycle.PAUSED_LIFECYCLE ? 'btn-info' : 'btn-outline-info'}" onclick=${PauseTimer}>
+                        Pause
+                    </button>
+                    <button class="btn ${lifecycle === Lifecycle.STOPPED_LIFECYCLE ? 'btn-info' : 'btn-outline-info'}" onclick=${StopTimer}>
+                        Stop
+                    </button>
+                </div>
+            </div>
+            <h1 class="display-3">${formatTime(timeRemaining)}</h1>
+            <p class="text-muted small">
+                Source code is available at${' '}<a href="https://github.com/zbicin/hyperdoro">GitHub</a>.
+                <br />
+                Built with${' '}<a href="https://github.com/jorgebucaran/hyperapp">Hyperapp</a>.
+            </p>
+        </main>
+    `,
     subscriptions: ({ lifecycle }) => [
         lifecycle === Lifecycle.RUNNING_LIFECYCLE && every(OneSecond, Tick)
     ],
